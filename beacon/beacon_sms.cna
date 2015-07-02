@@ -1,0 +1,45 @@
+#
+# ben.campbell@mwrinfosecurity.com
+#
+
+
+# internal list to keep track of all active beacons
+%beaconHosts = %();
+
+# check the database for beacons every minute
+on heartbeat_1m {
+    # Comma seperated list of numbers phone numbers e.g.
+    # 447747123231,4488731321
+    $numbers = "";
+
+    # Clockwork SMS Key
+    $clockwork_key = "";
+
+    # These needs to be manually URL encoded
+    $content = "New+Beacon+" . formatDate("yyyy.MM.dd+HH:mm:ss");
+
+    $url = "https://api.clockworksms.com/http/send.aspx";
+
+    $req = "$url $+ ?key= $+ $clockwork_key $+ &to= $+ $numbers $+ &content= $+ $content";
+    #println($req);
+
+    # get all the active beacons from the database
+    @beacons_sms = call('beacon.list');
+
+    foreach %beacon (@beacons_sms) {
+        # %beacon => ($id, $computer, $host, $last, $external, $pid,
+        # $user, $internal)
+
+        # get the internal IP for the beacon
+        $internal = %beacon["internal"];
+
+        if ($internal ne ""){
+            # if the beacon already isn't in our internal list, add it
+            if ($internal !in @beaconHosts){
+                %beaconHosts[$internal] = %beacon["id"];
+                url_open($req);
+            }
+        }
+    }
+}
+
