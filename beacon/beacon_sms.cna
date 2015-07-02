@@ -35,7 +35,7 @@ on heartbeat_1m {
 
         if ($internal ne ""){
             # if the beacon already isn't in our internal list, add it
-            if ($internal !in @beaconSMSHosts){
+            if ($internal !in %beaconSMSHosts){
                 %beaconSMSHosts[$internal] = %beacon["id"];
                 url_open($req);
             }
