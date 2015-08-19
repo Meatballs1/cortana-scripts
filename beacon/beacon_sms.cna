@@ -2,22 +2,39 @@
 # ben.campbell@mwrinfosecurity.com
 #
 
+# Comma seperated list of numbers phone numbers e.g.
+# 447747123231,4488731321
+$numbers = "";
+
+# Clockwork SMS Key
+$clockwork_key = "";
+
+# Indicate what project you are working on
+$project = "";
+
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 
 # internal list to keep track of all active beacons
 %beaconSMSHosts = %();
 
+sub url_open {
+ $req = $1;
+ $url = [new java.net.URL: $req];
+ [$conn = $url.openConnection];
+ [$conn setRequestMethod: "GET"];
+ $response = [$conn getResponseCode];
+ return $response;
+}
+
 # check the database for beacons every minute
 on heartbeat_1m {
-    # Comma seperated list of numbers phone numbers e.g.
-    # 447747123231,4488731321
-    $numbers = "";
-
-    # Clockwork SMS Key
-    $clockwork_key = "";
-
-    # These needs to be manually URL encoded
-    $content = "New+Beacon+" . formatDate("yyyy.MM.dd+HH:mm:ss");
-
+    $content = "$project New Beacon " . formatDate("yyyy.MM.dd HH:mm:ss");
+    $content = [java.net.URLEncoder encode: $content];
     $url = "https://api.clockworksms.com/http/send.aspx";
 
     $req = "$url $+ ?key= $+ $clockwork_key $+ &to= $+ $numbers $+ &content= $+ $content";
@@ -37,6 +54,7 @@ on heartbeat_1m {
             # if the beacon already isn't in our internal list, add it
             if ($internal !in %beaconSMSHosts){
                 %beaconSMSHosts[$internal] = %beacon["id"];
+                println("SMS sent -> $req");
                 url_open($req);
             }
         }
